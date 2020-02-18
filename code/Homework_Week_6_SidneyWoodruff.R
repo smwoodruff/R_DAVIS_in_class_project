@@ -11,7 +11,17 @@ Prob1 <- gapminder %>%
     summarize(avg_lifeExp = mean(lifeExp)) %>% 
       ggplot(mapping = aes(x = year, y = avg_lifeExp, color = continent)) +
           geom_line(aes(x = year, y = avg_lifeExp, color = continent)) +
-            geom_point()
+            geom_point() +
+              labs(x = "Year", y = "Average Life Expectancy") +
+                guides(color=guide_legend(title="Continent"))
+
+Prob1
+
+# An easy way to rename the legend
+# To rename the legend, you can also run the "rename" function. It works as rename(New Name = old name)
+# Can pipe it within the function and if you want to rename it in the actual data, you can overwrite the original dataset by renaming it and make that dataframe again
+
+
 
 # Problem 2.
 # Look at the following code and answer the following questions. What do you think the scale_x_log10() line of code is achieving? What about the geom_smooth() line of code?
