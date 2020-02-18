@@ -37,7 +37,7 @@ ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
 
 # Challenge! Modify the above code to size the points in proportion to the population of the country. Hint: Are you translating data to a visual feature of the plot?
 
-ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) +
+challenge <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) +
   geom_point(data = gapminder, alpha = 0.5) +
   geom_smooth(method = 'lm', color = 'black', linetype = 'dashed') +
   scale_x_log10()
@@ -45,7 +45,7 @@ ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)
 # Problem 3
 # Create a boxplot that shows the life expectency for Brazil, China, El Salvador, Niger, and the United States, with the data points in the backgroud using geom_jitter. Label the X and Y axis with “Country” and “Life Expectancy” and title the plot “Life Expectancy of Five Countries”.
 
-gapminder %>% 
+gapminder_boxplot <- gapminder %>% 
   filter(country %in% c("Brazil", "China", "El Salvador", "Niger", "United States")) %>% 
   ggplot(mapping = aes(x = country, y = lifeExp)) +
   geom_jitter(alpha = 0.8, aes(color = as.factor(country))) +
@@ -54,3 +54,4 @@ gapminder %>%
   labs(x = "Country", y = "Life Expectancy") +
   guides(color=guide_legend(title="Country"))
 
+gapminder_boxplot
