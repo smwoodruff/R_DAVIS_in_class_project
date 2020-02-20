@@ -86,23 +86,22 @@ ggplot(data = pop_growth, mapping = aes(x = reorder(country, pop_diff_02to07), y
   theme(axis.text.x = element_text(angle = 50, hjust = 1)) +
   labs(x = "Country", y = "Change in Population Between 2002 and 2007") +
   facet_wrap(~continent) # Without this facet_wrap line, all of the bar graphs across all continents would be together but putting this facet_wrap line with the ~continent separates them by continent since that variable is consistent across all data
-
 # Now to figure out how to configure each axis relative to its own continent and how to color each
-
 # This works better with the scales line because it allows you to put all of the axis labels together and not crowd the space
 
 countrycolor <- c("Africa" = "darkmagenta","Americas" = "navy", "Asia" = "olivedrab4", "Europe" = "darkorange2")
 
-
-pop_growth %>% 
+final <- pop_growth %>% 
   ggplot(mapping = aes(x = reorder(country, pop_diff_02to07), y = pop_diff_02to07)) +
-  geom_bar(aes(fill = continent), stat = "identity") +
+  geom_bar(aes(fill = continent), stat = "identity", show.legend = FALSE) +
   facet_wrap(~continent, scales = "free") +
   theme(axis.text.x = element_text(angle = 50, hjust = 1)) +
   labs(x = "Country", y = "Change in Population Between 2002 and 2007") +
-  scale_fill_brewer(palette = "Spectral")
+  scale_fill_manual(values = countrycolor)
 
+final
 
+# YEET
 
 
 
