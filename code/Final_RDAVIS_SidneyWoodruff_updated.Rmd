@@ -1,0 +1,260 @@
+---
+title: "Final_RDAVIS_SidneyWoodruff_updated"
+author: "Sidney Woodruff"
+date: "3/17/2020"
+output: html_document
+---
+
+## Initial Set-Up
+```{r, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(dplyr)
+```
+
+Reading the files in.
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+f <- read_csv("/Users/sidneywoodruff/Desktop/R_DAVIS_2020/R_DAVIS_in_class_project/data/raw_data/nyc_13_flights_new.csv")
+p <- read_csv("/Users/sidneywoodruff/Desktop/R_DAVIS_2020/R_DAVIS_in_class_project/data/raw_data/nyc_13_planes.csv")
+w <- read_csv("/Users/sidneywoodruff/Desktop/R_DAVIS_2020/R_DAVIS_in_class_project/data/raw_data/nyc_13_weather.csv")
+
+```
+
+I now need to join them together into one combined data table. I cannot join three tables at once, but I can join the planes table to the flights table, then join then weather table to the new combined planes and flights table.
+
+**First**, I will join planes to flights by the column "tailnum."  
+**Next**, I will join weather to that new joined table by the origin, year, month, day, and hour.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+fp <- left_join(f, p, by = "tailnum")
+
+colnames(fp)
+names(fp)[names(fp) == "year.x"] <- "year"
+names(fp)[names(fp) == "hour"] <- "hour_air"
+names(fp)[names(fp) == "minute"] <- "minute_air"
+# Needed to rename some columns so I can join with the weather data
+
+fp$dep_time <- stringr::str_pad(fp$dep_time, 4, side = "left", pad = 0)
+fp$sched_dep_time <- stringr::str_pad(fp$sched_dep_time, 4, side = "left", pad = 0)
+fp$arr_time <- stringr::str_pad(fp$arr_time, 4, side = "left", pad = 0)
+fp$sched_arr_time <- stringr::str_pad(fp$sched_arr_time, 4, side = "left", pad = 0)
+# Adding zeroes to the front of the departure time and scheduled departure time data so that when we separate them, it will take the first two digits as hours and the last two digits as minutes. Went ahead and did this for arrival time and scheduled arrival time too, just in case we need it later set up like that to separate.
+
+
+fp <- fp %>% 
+  separate(col = dep_time, c("hour", "min"), sep = 2)
+# Now, the combined flights and planes data has columns to bind to with weather
+
+
+# HOWEVER, we have to change the new hour and min columns from characters to numeric
+fp$hour <- as.numeric(as.character(fp$hour))
+fp$min <- as.numeric(as.character(fp$min))
+
+fpw <- left_join(fp, w, by = c("origin", "year", "month", "day", "hour"))
+
+```
+   
+Now, I have all of the three tables joined.
+
+-------  
+-------  
+  
+### On to the actual assignment...  
+<br>
+   
+##### <span style="color:blue"> Question 1) </span>
+*Plot the departure delay of flights against the precipitation, and include a simple regression line as part of the plot. Hint: there is a geom_ that will plot a simple y ~ x regression line for you, but you might have to use an argument to make sure it’s a regular linear model.*   
+<br>   
+<details>
+<summary>View code here!</summary>
+<p>
+
+```{r, warning=FALSE}
+
+q1 <- fpw %>% 
+  filter(!is.na(hour)) %>% 
+  filter(!is.na(precip)) %>% 
+  ggplot(mapping = aes(x = precip, y = dep_delay)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = lm, formula = y~x, color = "blue") + 
+  labs(x = "Precipitation (in)", y = "Delay in Departure (mins)", title = "Flight Departure Delays Based on Precipitation")
+
+```
+</p>
+</details>  
+<br>
+<br>
+```{r, echo=FALSE}
+print(q1)
+```
+   
+-------
+
+##### <span style="color:blue"> Question 2) </span>
+*Create a figure that has date on the x axis and mean departure delay on the y axis. Plot only months September through December. Somehow distinguish between airline carriers (the method is up to you). Hint: You have the columns sched_dep_time (scheduled departure time) and dep_time (the actual departure time). Calculate the difference for the departure delay.*   
+<br>   
+<details>
+<summary>View code here!</summary>
+<p>
+
+```{r, message=FALSE}
+library(lubridate)
+```
+
+```{r}
+
+fpw_SepttoDec <- fpw %>% 
+  filter(fpw$month == c(9:12)) # Only months September through to December
+
+# Making column with year, month, and day combined into date format (ym)
+fpw_SepttoDec$date <- paste(fpw_SepttoDec$year, "-", fpw_SepttoDec$month, "-", fpw_SepttoDec$day)
+fpw_SepttoDec$date <- ymd(fpw_SepttoDec$date)
+
+fpw_SepttoDec_grouped <- fpw_SepttoDec %>% 
+  filter(!is.na(dep_delay)) %>% 
+  group_by(carrier, month) %>% 
+  summarize(mean_delay = mean(dep_delay))
+
+
+q2 <- fpw_SepttoDec_grouped %>% 
+  ggplot(mapping = aes(x = month, y = mean_delay)) +
+  geom_line(aes(color = carrier), size = 1) +
+  labs(title="Average delays from September to December in 2013", subtitle="Separated by carrier company", y="Average Departure Delay (mins)", x="Month") +
+  scale_x_continuous(breaks = c(9, 10, 11, 12), label = c("September", "October", "November", "December"))
+
+```
+
+</p>
+</details>  
+<br>
+<br>
+```{r, echo=FALSE}
+print(q2)
+```
+   
+-------
+   
+##### <span style="color:blue"> Question 3) </span>
+*Create a table with these columns: date (year, month and day), mean_temp_EWR, mean_temp_JFK, mean_temp_LGA. Notice the names share a prefix, wonder if there’s an argument somewhere for that… Also, it’s a lot of data, so think about whether you want a really long table or an interactive one you can click through (check out the RMarkdown lesson if you need help).*
+<br>
+<details>
+<summary>View code here!</summary>
+<p>
+
+```{r}
+
+fpw2 <- fpw
+fpw2$date <- paste0(fpw2$year, "-", fpw2$month, "-", fpw2$day)
+fpw2$date <- ymd(fpw2$date)
+# Put the column with date in ymd format
+
+q3 <- fpw2 %>% 
+  select(date, origin, temp) %>% 
+  filter(origin == "EWR" | origin == "JFK" | origin == "LGA") %>% 
+  group_by(date, origin) %>% 
+  filter(!is.na(temp))
+  
+
+q3_EWR <- q3 %>% 
+  group_by(date, origin) %>% 
+  filter(origin == "EWR") %>% 
+  summarize(mean_temp_EWR = mean(temp)) %>% 
+  select(date, mean_temp_EWR)
+
+q3_JFK <- q3 %>% 
+  group_by(date, origin) %>% 
+  filter(origin == "JFK") %>% 
+  summarize(mean_temp_JFK = mean(temp)) %>% 
+  select(date, mean_temp_JFK)
+  
+q3_LGA <- q3 %>% 
+  group_by(date, origin) %>% 
+  filter(origin == "LGA") %>% 
+  summarize(mean_temp_LGA = mean(temp)) %>% 
+  select(date, mean_temp_LGA)
+
+q3_final <- left_join(q3_EWR, q3_JFK, by = "date")
+q3_final <- left_join(q3_final, q3_LGA, by = "date")
+# Final table is made.
+
+```
+</p>
+</details>  
+<br>
+<br>
+```{r, echo=FALSE}
+
+DT::datatable(q3_final)
+
+```
+
+
+
+-------
+
+##### <span style="color:blue">Question 4) </span>
+*Make a combination violin/scatterplot showing departure delay by manufacturer, and add a facet for whether or not it’s raining. Hint: you’ll have to make a new column to classify “raining” or “not raining”, the exact method is up to you.*
+<br>
+<details>
+<summary>View code here!</summary>
+<p>
+
+```{r}
+
+# Making column with raining or not raining
+fpw$rain <- ifelse(fpw$precip >0, "Raining", "Not Raining")
+
+
+                              
+q4 <- fpw %>% 
+  filter(!is.na(dep_delay)) %>% 
+  filter(rain == "Raining" | rain == "Not Raining") %>% 
+  ggplot(mapping = aes(x = manufacturer, y = dep_delay)) +
+  geom_violin() +
+  geom_point(alpha = 0.4) +
+  theme(axis.text.x = element_text(angle = 50, hjust = 1)) +
+  facet_wrap(~rain) +
+  labs(x = "Manufacturer", y = "Departure Delay (min)", title = "Departure delay by manufacturer")
+
+
+
+
+
+
+```
+</p>
+</details>  
+<br>
+<br>
+```{r, echo=FALSE}
+print(q4)
+```
+
+-------
+
+##### <span style="color:blue"> Question 5) </span>
+*Insert an image of the coolest plane in the planes dataset (the choice is yours). Add a link to a webpage with some information on this super cool plane. Bonus points if your image is a GIF (not really bonus points but we’ll like it).*
+<br>  
+<p>  
+  
+  
+![1974 Cessna 172M](/Users/sidneywoodruff/Desktop/R_DAVIS_2020/R_DAVIS_in_class_project/images/0830_used_skyhawks_16x9.jpg)
+  
+  <br>
+[Link to some information about getting this plane!](https://planephd.com/wizard/details/189/CESSNA-172M-Skyhawk-specifications-performance-operating-cost-valuation)
+
+</p>
+<br>
+<br>
+
+
+
+
+
+
+
+
+
+
+
